@@ -1,0 +1,32 @@
+{
+  "object": "whatsapp_business_account",
+  "messaging_product": "whatsapp",
+  "entry": [
+    {
+      "id": "ENTRY_ID",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "254700000001",
+              "phone_number_id": "PHONE_ID"
+            },
+            "messages": [
+              {
+                "id": "wamid.test123",
+                "from": "254712345678",
+                "timestamp": "1700000000",
+                "type": "text",
+                "text": {
+                  "body": "Nataka TV nzuri ya 43 inch"
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

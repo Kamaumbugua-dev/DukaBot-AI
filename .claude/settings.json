@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /instagram|facebook|youtube|linkedin|twitter|whatsapp|mail/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /^\\(Instagram|Facebook|Youtube|Linkedin|Twitter|Whatsapp|Mail|Moon|Sun|Heart|Bot\\)Icon$/.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(netstat -ano)",
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /^\\(Shield|Heart|Trend|Chart|Arrow\\)/i.test\\(k\\) && k.endsWith\\('Icon'\\)\\).slice\\(0,20\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /^\\(Shield|Heart|Trend|Chart|TrendUp|Arrow\\)/i.test\\(k\\) && k.endsWith\\('Icon'\\)\\).slice\\(0,20\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /Shield|Heart|TrendUp|TrendingUp/i.test\\(k\\) && k.endsWith\\('Icon'\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node --input-type=module --eval \"import * as h from '@hugeicons/core-free-icons'; console.log\\(Object.keys\\(h\\).filter\\(k => /Trend|Growth|Analyt|Chart|Rising|Increase/i.test\\(k\\) && k.endsWith\\('Icon'\\)\\).join\\('\\\\n'\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Hp\\Desktop\\dukabot-ai\\dashboard\\.git"
+    ]
+  }
+}

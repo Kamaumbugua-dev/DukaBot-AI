@@ -1,0 +1,21 @@
+{
+  "messaging_product": "whatsapp",
+  "entry": [
+    {
+      "changes": [
+        {
+          "value": {
+            "statuses": [
+              {
+                "id": "wamid.msg123",
+                "recipient_id": "254712345678",
+                "status": "delivered",
+                "timestamp": "1700000002"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

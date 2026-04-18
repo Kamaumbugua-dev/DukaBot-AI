@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: DukaBot AI API
+  description: WhatsApp AI sales agent for Kenyan SMEs — AxonLattice Labs
+  version: 1.0.0
+  contact:
+    name: AxonLattice Labs
+    email: support@axonlattice.com
+
+servers:
+  - url: https://dukabot.axonlattice.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: System healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  version: { type: string }
+                  uptime: { type: integer }
+                  database: { type: string }
+                  redis: { type: string }
+
+  /webhook/whatsapp:
+    get:
+      summary: WhatsApp webhook verification
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema: { type: string }
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema: { type: string }
+        - name: hub.challenge
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Verification successful }
+        '403': { description: Invalid token }
+    post:
+      summary: Receive WhatsApp webhook events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: Acknowledged }
+        '401': { description: Invalid signature }
+
+  /mpesa/callback:
+    post:
+      summary: M-Pesa STK push callback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Body:
+                  type: object
+                  properties:
+                    stkCallback:
+                      type: object
+                      properties:
+                        ResultCode: { type: integer }
+                        ResultDesc: { type: string }
+                        CheckoutRequestID: { type: string }
+      responses:
+        '200': { description: Callback accepted }
+
+  /api/merchants:
+    post:
+      summary: Register a new merchant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [businessName, phone, waPhoneId]
+              properties:
+                businessName: { type: string }
+                phone: { type: string, example: '254700000001' }
+                waPhoneId: { type: string }
+                mpesaShortcode: { type: string }
+                location: { type: string }
+      responses:
+        '201':
+          description: Merchant created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Merchant' }
+        '400': { description: Validation error }
+
+  /api/merchants/{id}:
+    get:
+      summary: Get merchant by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Merchant' }
+        '404': { description: Not found }
+
+  /api/merchants/{id}/analytics:
+    get:
+      summary: Get merchant sales analytics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: days
+          in: query
+          schema: { type: integer, default: 30 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOrders: { type: integer }
+                  totalRevenue: { type: number }
+                  averageOrderValue: { type: number }
+                  topProducts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        quantity: { type: integer }
+                        revenue: { type: number }
+                  ordersByStatus:
+                    type: object
+                    additionalProperties: { type: integer }
+                  dailyRevenue:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        revenue: { type: number }
+                        orders: { type: integer }
+
+  /api/merchants/{id}/settings:
+    get:
+      summary: Get merchant settings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantSettings' }
+    patch:
+      summary: Update merchant settings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MerchantSettings' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantSettings' }
+
+  /api/merchants/{id}/products:
+    post:
+      summary: Add a product to merchant catalog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, priceKES, category]
+              properties:
+                name: { type: string }
+                priceKES: { type: number }
+                category:
+                  type: string
+                  enum: [electronics, phones, tvs, audio, accessories, computers, appliances, other]
+                description: { type: string }
+                imageUrl: { type: string, format: uri }
+                stock: { type: integer }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+
+  /api/merchants/{id}/orders/{orderId}/status:
+    patch:
+      summary: Update order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [shipped, delivered, cancelled]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400': { description: Invalid status transition }
+        '403': { description: Forbidden }
+        '404': { description: Order not found }
+
+components:
+  schemas:
+    Merchant:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        businessName: { type: string }
+        phone: { type: string }
+        location: { type: string }
+        mpesaShortcode: { type: string }
+        plan: { type: string, enum: [free, starter, pro] }
+        settings: { $ref: '#/components/schemas/MerchantSettings' }
+        createdAt: { type: string, format: date-time }
+
+    MerchantSettings:
+      type: object
+      properties:
+        businessHours: { type: string, example: 'Mon-Sat 8AM-6PM' }
+        categories:
+          type: array
+          items: { type: string }
+        deliveryInfo: { type: string }
+        offHoursMessage: { type: string }
+        deliveryZones:
+          type: array
+          items: { type: string }
+        deliveryFee: { type: number }
+
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        merchantId: { type: string, format: uuid }
+        name: { type: string }
+        priceKES: { type: number }
+        category: { type: string }
+        description: { type: string }
+        stock: { type: integer }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    Order:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        merchantId: { type: string, format: uuid }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string }
+              name: { type: string }
+              priceKES: { type: number }
+              quantity: { type: integer }
+        totalKES: { type: number }
+        status: { type: string }
+        mpesaReceipt: { type: string }
+        createdAt: { type: string, format: date-time }

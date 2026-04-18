@@ -1,0 +1,29 @@
+{
+  "messaging_product": "whatsapp",
+  "entry": [
+    {
+      "changes": [
+        {
+          "value": {
+            "messages": [
+              {
+                "id": "wamid.interactive1",
+                "from": "0712345678",
+                "timestamp": "1700000001",
+                "type": "interactive",
+                "interactive": {
+                  "type": "list_reply",
+                  "list_reply": {
+                    "id": "prod_hisense_43",
+                    "title": "Hisense 43A6H",
+                    "description": "KES 38,500"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS delivery_address TEXT,
+  ADD COLUMN IF NOT EXISTS delivery_notes TEXT,
+  ADD COLUMN IF NOT EXISTS requires_installation BOOLEAN DEFAULT FALSE;
