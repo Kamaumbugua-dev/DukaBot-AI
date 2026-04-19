@@ -8,7 +8,16 @@ import { Separator } from '@/components/ui/separator'
 // ── Types ────────────────────────────────────────────────────────────────────
 type AdminSection =
   | 'dashboard' | 'merchants' | 'subscriptions'
-  | 'payments' | 'system' | 'support' | 'settings'
+  | 'payments' | 'system' | 'support' | 'settings' | 'history'
+
+type ActivityKind = 'signup' | 'payment' | 'plan_change' | 'suspension' | 'reinstatement' | 'cancellation' | 'ticket' | 'chat_milestone' | 'refund'
+
+interface ActivityEvent {
+  date: string
+  kind: ActivityKind
+  title: string
+  detail: string
+}
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const MERCHANTS = [
@@ -68,6 +77,86 @@ const SERVICES = [
   { name: 'Dashboard CDN',        status: 'degraded',    latency: '890ms', uptime: '98.40%', region: 'Cloudflare'     },
   { name: 'Email (Resend)',        status: 'operational', latency: '220ms', uptime: '99.88%', region: 'Resend EU'      },
 ]
+
+const MERCHANT_ACTIVITY: Record<string, ActivityEvent[]> = {
+  M001: [
+    { date: '2026-01-12 09:04', kind: 'signup',         title: 'Account created',                   detail: 'Registered on Starter trial — via web portal' },
+    { date: '2026-01-12 09:18', kind: 'payment',        title: 'First payment — KES 3,999',          detail: 'Upgraded to Growth Monthly · M-Pesa · Ref: RLM9X4K' },
+    { date: '2026-01-12 09:19', kind: 'plan_change',    title: 'Plan: Starter → Growth',             detail: 'Upgraded immediately after signup' },
+    { date: '2026-02-01 14:30', kind: 'chat_milestone', title: '500 chats milestone reached',         detail: 'Bot handled 500 customer conversations' },
+    { date: '2026-02-12 09:04', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly auto-renewed · M-Pesa · Ref: ZKX2P7Q' },
+    { date: '2026-03-12 09:04', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly auto-renewed · M-Pesa · Ref: PNW5J3R' },
+    { date: '2026-03-28 11:00', kind: 'chat_milestone', title: '1,000 chats milestone reached',       detail: 'Bot handled 1,000 customer conversations total' },
+    { date: '2026-04-12 09:14', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly auto-renewed · M-Pesa · Ref: RLM9X4K' },
+  ],
+  M002: [
+    { date: '2026-02-03 11:22', kind: 'signup',         title: 'Account created',                   detail: 'Registered on Starter trial — via referral link' },
+    { date: '2026-02-03 11:45', kind: 'payment',        title: 'First payment — KES 999',            detail: 'Starter Yearly · Card · Ref: VISA6612' },
+    { date: '2026-02-03 11:46', kind: 'plan_change',    title: 'Plan: Trial → Starter (Yearly)',     detail: 'Chose yearly billing for 20% discount' },
+    { date: '2026-04-14 10:05', kind: 'payment',        title: 'Yearly renewal — KES 999',           detail: 'Starter Yearly auto-renewed · Card · Ref: VISA6612' },
+    { date: '2026-04-17 14:20', kind: 'ticket',         title: 'Support ticket #TKT-038 resolved',   detail: 'Query: How to add product images — answered by Admin' },
+  ],
+  M003: [
+    { date: '2026-01-28 08:00', kind: 'signup',         title: 'Account created',                   detail: 'Direct Pro signup — referred by partner agency' },
+    { date: '2026-01-28 08:12', kind: 'payment',        title: 'First payment — KES 8,999',          detail: 'Pro Monthly · M-Pesa · Ref: QHJ7K2P' },
+    { date: '2026-01-28 08:13', kind: 'plan_change',    title: 'Plan: Trial → Pro',                  detail: 'Immediate activation of Pro features' },
+    { date: '2026-02-14 16:00', kind: 'chat_milestone', title: '1,000 chats milestone reached',       detail: 'Fastest merchant to reach 1K chats — 17 days' },
+    { date: '2026-02-28 08:00', kind: 'payment',        title: 'Renewal — KES 8,999',                detail: 'Pro Monthly auto-renewed · M-Pesa · Ref: LRT4N9X' },
+    { date: '2026-03-28 08:00', kind: 'payment',        title: 'Renewal — KES 8,999',                detail: 'Pro Monthly auto-renewed · M-Pesa · Ref: VBQ8K1J' },
+    { date: '2026-04-04 09:30', kind: 'ticket',         title: 'Support ticket #TKT-036 resolved',   detail: 'API access for custom ERP integration — granted' },
+    { date: '2026-04-19 09:14', kind: 'payment',        title: 'Renewal — KES 8,999',                detail: 'Pro Monthly auto-renewed · M-Pesa · Ref: QHJ7K2P' },
+  ],
+  M004: [
+    { date: '2026-03-07 10:00', kind: 'signup',         title: 'Account created',                   detail: 'Started 14-day trial' },
+    { date: '2026-03-07 10:35', kind: 'payment',        title: 'First payment — KES 2,999',          detail: 'Growth Yearly · Card · Ref: VISA2247' },
+    { date: '2026-03-07 10:36', kind: 'plan_change',    title: 'Plan: Trial → Growth (Yearly)',      detail: 'Opted for yearly billing' },
+    { date: '2026-04-15 16:30', kind: 'payment',        title: 'Yearly renewal — KES 2,999',         detail: 'Growth Yearly auto-renewed · Card · Ref: VISA2247' },
+    { date: '2026-04-18 08:00', kind: 'ticket',         title: 'Support ticket #TKT-039 opened',     detail: 'Bot replying in English despite Swahili set — investigating' },
+  ],
+  M005: [
+    { date: '2026-04-10 13:00', kind: 'signup',         title: 'Account created',                   detail: 'Started 14-day free trial' },
+    { date: '2026-04-19 10:00', kind: 'ticket',         title: 'Support ticket #TKT-041 opened',     detail: 'STK Push not arriving on customer phones — high priority' },
+  ],
+  M006: [
+    { date: '2026-02-19 09:30', kind: 'signup',         title: 'Account created',                   detail: 'Registered via WhatsApp referral' },
+    { date: '2026-02-19 09:50', kind: 'payment',        title: 'First payment — KES 3,999',          detail: 'Growth Monthly · M-Pesa · Ref: WPQ3T8N' },
+    { date: '2026-02-19 09:51', kind: 'plan_change',    title: 'Plan: Trial → Growth',               detail: 'Activated Growth features immediately' },
+    { date: '2026-03-19 09:30', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly auto-renewed · M-Pesa · Ref: AXP2Q8Z' },
+    { date: '2026-04-18 14:22', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly auto-renewed · M-Pesa · Ref: WPQ3T8N' },
+  ],
+  M007: [
+    { date: '2026-03-14 11:00', kind: 'signup',         title: 'Account created',                   detail: 'Started 14-day free trial' },
+    { date: '2026-03-14 11:20', kind: 'payment',        title: 'First payment — KES 1,499',          detail: 'Starter Monthly · M-Pesa · Ref: KLP1M7X' },
+    { date: '2026-03-14 11:21', kind: 'plan_change',    title: 'Plan: Trial → Starter',              detail: 'Activated Starter plan' },
+    { date: '2026-04-16 09:55', kind: 'payment',        title: 'Renewal failed — KES 1,499',         detail: 'M-Pesa STK Push declined · Ref: KLP1M7X · 3 retries' },
+    { date: '2026-04-16 10:05', kind: 'suspension',     title: 'Account suspended',                  detail: 'Auto-suspended after payment failure · Grace period expired' },
+    { date: '2026-04-18 08:00', kind: 'ticket',         title: 'Support ticket #TKT-040 opened',     detail: 'Merchant requesting account review and reinstatement' },
+  ],
+  M008: [
+    { date: '2026-02-01 07:00', kind: 'signup',         title: 'Account created',                   detail: 'Pro plan — direct enterprise onboarding' },
+    { date: '2026-02-01 07:15', kind: 'payment',        title: 'First payment — KES 6,999',          detail: 'Pro Yearly · Card · Ref: VISA4521' },
+    { date: '2026-02-01 07:16', kind: 'plan_change',    title: 'Plan: Trial → Pro (Yearly)',         detail: 'Enterprise yearly billing activated' },
+    { date: '2026-03-01 09:00', kind: 'chat_milestone', title: '1,000 chats milestone reached',       detail: 'Consistent high-volume pharmacy queries' },
+    { date: '2026-04-01 09:00', kind: 'chat_milestone', title: '2,000 chats milestone reached',       detail: 'Second month doubles volume' },
+    { date: '2026-04-19 08:02', kind: 'payment',        title: 'Yearly renewal — KES 6,999',         detail: 'Pro Yearly auto-renewed · Card · Ref: VISA4521' },
+  ],
+  M009: [
+    { date: '2026-01-05 14:00', kind: 'signup',         title: 'Account created',                   detail: 'Started on Growth Monthly' },
+    { date: '2026-01-05 14:20', kind: 'payment',        title: 'First payment — KES 3,999',          detail: 'Growth Monthly · M-Pesa · Ref: NPQ5J3M' },
+    { date: '2026-01-05 14:21', kind: 'plan_change',    title: 'Plan: Trial → Growth',               detail: 'Growth activated' },
+    { date: '2026-02-05 14:00', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly renewed · M-Pesa · Ref: XKT7B2P' },
+    { date: '2026-03-05 14:00', kind: 'payment',        title: 'Renewal — KES 3,999',                detail: 'Growth Monthly renewed · M-Pesa · Ref: QMJ4C1L' },
+    { date: '2026-04-05 08:00', kind: 'cancellation',   title: 'Subscription cancelled',             detail: 'Merchant opted out — cited low chat volume in sector' },
+    { date: '2026-04-12 08:30', kind: 'refund',         title: 'Refund issued — KES 3,999',          detail: 'April payment refunded per dispute · Ref: NPQ5J3M' },
+  ],
+  M010: [
+    { date: '2026-03-22 10:00', kind: 'signup',         title: 'Account created',                   detail: 'Growth Yearly — seasonal agri-business' },
+    { date: '2026-03-22 10:20', kind: 'payment',        title: 'First payment — KES 2,999',          detail: 'Growth Yearly · Card · Ref: VISA9013' },
+    { date: '2026-03-22 10:21', kind: 'plan_change',    title: 'Plan: Trial → Growth (Yearly)',      detail: 'Yearly billing chosen' },
+    { date: '2026-04-17 11:10', kind: 'payment',        title: 'Renewal — KES 2,999',                detail: 'Growth Yearly auto-renewed · Card · Ref: VISA9013' },
+    { date: '2026-04-16 13:00', kind: 'ticket',         title: 'Support ticket #TKT-037 resolved',   detail: 'Upgrade inquiry Growth → Pro — Admin guided merchant' },
+  ],
+}
 
 // ── Stat card ────────────────────────────────────────────────────────────────
 function KPI({ label, value, sub, color = 'indigo' }: {
@@ -146,6 +235,10 @@ const NAV: { section: AdminSection; label: string; icon: React.ReactNode; badge?
     section: 'support', label: 'Support Tickets',
     badge: `${SUPPORT_TICKETS.filter(t => t.status === 'open').length}`,
     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>,
+  },
+  {
+    section: 'history', label: 'Merchant History',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
   },
   {
     section: 'settings', label: 'Platform Settings',
@@ -278,7 +371,7 @@ function Dashboard() {
   )
 }
 
-function MerchantsSection() {
+function MerchantsSection({ onViewHistory }: { onViewHistory: (id: string) => void }) {
   const [search, setSearch] = useState('')
   const [actions, setActions] = useState<Record<string, string>>({})
   const filtered = MERCHANTS.filter(m =>
@@ -335,9 +428,9 @@ function MerchantsSection() {
                         <span className="text-xs text-green-600 font-medium">{actions[m.id]}</span>
                       ) : (
                         <>
-                          <button onClick={() => setActions(a=>({...a,[m.id]:'Viewed'}))}
+                          <button onClick={() => onViewHistory(m.id)}
                             className="px-2 py-1 text-xs rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-all">
-                            View
+                            History
                           </button>
                           {m.status === 'active' && (
                             <button onClick={() => setActions(a=>({...a,[m.id]:'Suspended'}))}
@@ -661,6 +754,313 @@ function PlatformSettings() {
   )
 }
 
+// ── History Section ───────────────────────────────────────────────────────────
+const KIND_META: Record<ActivityKind, { label: string; dot: string; icon: React.ReactNode }> = {
+  signup:         { label: 'Signup',         dot: 'bg-indigo-500',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><circle cx="12" cy="7" r="4" stroke="white" strokeWidth="2.5"/></svg> },
+  payment:        { label: 'Payment',        dot: 'bg-green-500',   icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg> },
+  plan_change:    { label: 'Plan Change',    dot: 'bg-purple-500',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="white" strokeWidth="2" strokeLinejoin="round"/></svg> },
+  suspension:     { label: 'Suspension',     dot: 'bg-red-500',     icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.5"/><path d="M15 9l-6 6M9 9l6 6" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg> },
+  reinstatement:  { label: 'Reinstatement',  dot: 'bg-teal-500',    icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/></svg> },
+  cancellation:   { label: 'Cancellation',   dot: 'bg-gray-500',    icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg> },
+  ticket:         { label: 'Support Ticket', dot: 'bg-yellow-500',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="2" strokeLinejoin="round"/></svg> },
+  chat_milestone: { label: 'Chat Milestone', dot: 'bg-blue-500',    icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="white" strokeWidth="2" strokeLinecap="round"/><path d="M22 4L12 14.01l-3-3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+  refund:         { label: 'Refund',         dot: 'bg-orange-500',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 9l4-4 4 4M7 5v14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 15l-4 4-4-4M17 19V5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+}
+
+type HistoryTab = 'timeline' | 'payments' | 'tickets'
+
+function MerchantDetail({ merchant }: { merchant: typeof MERCHANTS[0] }) {
+  const [tab, setTab] = useState<HistoryTab>('timeline')
+
+  const sub      = SUBSCRIPTIONS.find(s => s.merchant === merchant.name)
+  const payments = PAYMENTS.filter(p => p.merchant === merchant.name)
+  const tickets  = SUPPORT_TICKETS.filter(t => t.merchant === merchant.name)
+  const activity = (MERCHANT_ACTIVITY[merchant.id] ?? []).slice().reverse()
+
+  const totalPaid = payments.filter(p => p.status === 'success').reduce((a, p) => a + p.amount, 0)
+
+  return (
+    <div className="flex-1 min-w-0 space-y-4">
+      {/* Merchant header card */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shrink-0">
+            {merchant.name[0]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{merchant.name}</h3>
+              <StatusBadge status={merchant.status} />
+              <Badge variant="outline">{merchant.plan}</Badge>
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5 font-mono">{merchant.whatsapp}</p>
+            <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-gray-400">
+              <span>ID: <span className="font-mono font-medium text-gray-600 dark:text-gray-300">{merchant.id}</span></span>
+              <span>Joined: <span className="font-medium text-gray-600 dark:text-gray-300">{merchant.joined}</span></span>
+              <span>Last active: <span className="font-medium text-gray-600 dark:text-gray-300">{merchant.lastActive}</span></span>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
+          {[
+            { label: 'Total Chats',         value: merchant.chats.toLocaleString(),           color: 'text-indigo-600' },
+            { label: 'Revenue Generated',   value: `KES ${merchant.revenue.toLocaleString()}`, color: 'text-green-600'  },
+            { label: 'Lifetime Paid',       value: `KES ${totalPaid.toLocaleString()}`,         color: 'text-purple-600' },
+            { label: 'Open Tickets',        value: `${tickets.filter(t => t.status === 'open').length}`, color: tickets.some(t => t.status === 'open') ? 'text-yellow-600' : 'text-gray-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="text-center">
+              <p className={`text-lg font-bold ${color}`}>{value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Subscription summary */}
+      {sub && (
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Current Subscription</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5">{sub.plan} — {sub.billing}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Amount</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{sub.amount > 0 ? `KES ${sub.amount.toLocaleString()}` : 'Free trial'}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Payment method</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{sub.method !== '—' ? sub.method : '—'}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Next renewal</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{sub.renewal}</p>
+          </div>
+          <StatusBadge status={sub.status} />
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">
+        {([
+          { id: 'timeline', label: `Timeline (${activity.length})` },
+          { id: 'payments', label: `Payments (${payments.length})` },
+          { id: 'tickets',  label: `Tickets (${tickets.length})` },
+        ] as { id: HistoryTab; label: string }[]).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === t.id
+                ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2 }}
+        >
+          {tab === 'timeline' && (
+            <div className="relative">
+              {/* Vertical line */}
+              <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-100 dark:bg-gray-800" />
+              <div className="space-y-0">
+                {activity.map((ev, i) => {
+                  const meta = KIND_META[ev.kind]
+                  return (
+                    <div key={i} className="flex gap-4 relative group">
+                      {/* Dot */}
+                      <div className={`relative z-10 w-8 h-8 rounded-full ${meta.dot} shrink-0 flex items-center justify-center shadow-sm mt-3`}>
+                        {meta.icon}
+                      </div>
+                      {/* Content */}
+                      <div className={`flex-1 py-3 border-b border-gray-50 dark:border-gray-800/60 last:border-0`}>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{ev.title}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{ev.detail}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.dot.replace('bg-', 'bg-').replace('500', '100')} text-gray-700 dark:text-gray-300`}>
+                              {meta.label}
+                            </span>
+                            <p className="text-[11px] text-gray-400 mt-1">{ev.date}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {activity.length === 0 && (
+                  <p className="text-sm text-gray-400 pl-12 py-6">No activity recorded yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tab === 'payments' && (
+            <Card>
+              <CardContent className="p-0">
+                {payments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Transaction ID</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payments.map(p => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                          <TableCell className="text-sm font-medium">KES {p.amount.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.method === 'M-Pesa' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}`}>
+                              {p.method}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-gray-500">{p.ref}</TableCell>
+                          <TableCell><StatusBadge status={p.status} /></TableCell>
+                          <TableCell className="text-xs text-gray-500">{p.date}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-gray-400 p-6">No payment records found for this merchant.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {tab === 'tickets' && (
+            <div className="space-y-3">
+              {tickets.length > 0 ? tickets.map(t => (
+                <div key={t.id} className={`bg-white dark:bg-gray-900 border rounded-xl p-4 ${t.status === 'open' ? 'border-yellow-200 dark:border-yellow-900/50' : 'border-gray-100 dark:border-gray-800'}`}>
+                  <div className="flex items-start gap-3 flex-wrap">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-mono text-xs text-gray-400">{t.id}</span>
+                        <StatusBadge status={t.priority} />
+                        <StatusBadge status={t.status} />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t.subject}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t.created} · Assignee: {t.assignee}</p>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-400 p-4">No support tickets for this merchant.</p>
+              )}
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function HistorySection({ initialMerchantId }: { initialMerchantId?: string | null }) {
+  const [search, setSearch] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(initialMerchantId ?? null)
+
+  const filtered = MERCHANTS.filter(m =>
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    m.whatsapp.includes(search) ||
+    m.id.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const selected = MERCHANTS.find(m => m.id === selectedId) ?? null
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Merchant History</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Full audit trail — subscriptions, payments, tickets, and activity timeline for every merchant</p>
+      </div>
+
+      <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+        {/* Left: merchant list */}
+        <div className="w-64 shrink-0 flex flex-col gap-2">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search merchants…"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all"
+          />
+          <div className="flex-1 overflow-y-auto rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-50 dark:divide-gray-800">
+            {filtered.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setSelectedId(m.id)}
+                className={`w-full text-left px-3 py-3 transition-all hover:bg-indigo-50 dark:hover:bg-indigo-950/30 ${
+                  selectedId === m.id ? 'bg-indigo-50 dark:bg-indigo-950/40 border-l-2 border-indigo-500' : ''
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
+                    selectedId === m.id ? 'bg-indigo-600 text-white' : 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
+                  }`}>
+                    {m.name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{m.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        m.status === 'active' ? 'bg-green-500' :
+                        m.status === 'trial'  ? 'bg-blue-500' :
+                        m.status === 'suspended' ? 'bg-red-500' : 'bg-gray-400'
+                      }`} />
+                      <p className="text-[11px] text-gray-400 capitalize">{m.status} · {m.plan}</p>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-8">No merchants found</p>
+            )}
+          </div>
+        </div>
+
+        {/* Right: merchant detail */}
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          {selected ? (
+            <MerchantDetail key={selected.id} merchant={selected} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center gap-3 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-gray-300 dark:text-gray-700">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Select a merchant</p>
+                <p className="text-xs text-gray-400 mt-0.5">Choose from the list to view their complete history</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── MAIN ADMIN LAYOUT ─────────────────────────────────────────────────────────
 interface AdminProps {
   onSignOut: () => void
@@ -669,14 +1069,21 @@ interface AdminProps {
 export function AdminPage({ onSignOut }: AdminProps) {
   const [section, setSection] = useState<AdminSection>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [focusMerchantId, setFocusMerchantId] = useState<string | null>(null)
+
+  function viewMerchantHistory(id: string) {
+    setFocusMerchantId(id)
+    setSection('history')
+  }
 
   const SECTION_MAP: Record<AdminSection, React.ReactNode> = {
     dashboard:     <Dashboard />,
-    merchants:     <MerchantsSection />,
+    merchants:     <MerchantsSection onViewHistory={viewMerchantHistory} />,
     subscriptions: <SubscriptionsSection />,
     payments:      <PaymentsSection />,
     system:        <SystemHealth />,
     support:       <SupportSection />,
+    history:       <HistorySection initialMerchantId={focusMerchantId} />,
     settings:      <PlatformSettings />,
   }
 
@@ -711,7 +1118,7 @@ export function AdminPage({ onSignOut }: AdminProps) {
         <nav className="flex-1 py-3 overflow-y-auto">
           <div className="space-y-0.5 px-2">
             {NAV.map(({ section: sec, label, icon, badge }) => (
-              <button key={sec} onClick={() => setSection(sec)}
+              <button key={sec} onClick={() => { setSection(sec); if (sec !== 'history') setFocusMerchantId(null) }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   section === sec
                     ? 'bg-indigo-600 text-white'
