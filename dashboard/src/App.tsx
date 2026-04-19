@@ -18,6 +18,7 @@ import { HelpPage }        from '@/pages/help'
 import { LoginPage }       from '@/pages/login'
 import { LandingPage }     from '@/pages/landing'
 import { PricingPage }     from '@/pages/pricing'
+import { PaymentPage, type PaymentPlan } from '@/pages/payment'
 import { CatalogPage }     from '@/pages/catalog'
 import { Footer }          from '@/components/footer'
 
@@ -46,6 +47,7 @@ export default function App() {
   const [authed, setAuthed]           = useState(false)
   const [showLogin, setShowLogin]     = useState(false)
   const [currentPage, setCurrentPage] = useState<Page>('overview')
+  const [pendingPayment, setPendingPayment] = useState<PaymentPlan | null>(null)
 
   // Visitor — show public portfolio landing page
   if (!authed && !showLogin) {
@@ -55,6 +57,16 @@ export default function App() {
   // Visitor clicked Sign In / Get Started — show login gate
   if (!authed && showLogin) {
     return <LoginPage onLogin={() => { setAuthed(true); setShowLogin(false) }} />
+  }
+
+  // Payment full-screen overlay — shown over the dashboard when a plan is selected
+  if (pendingPayment) {
+    return (
+      <PaymentPage
+        plan={pendingPayment}
+        onDone={() => { setPendingPayment(null); setCurrentPage('overview') }}
+      />
+    )
   }
 
   return (
@@ -82,7 +94,7 @@ export default function App() {
               {currentPage === 'docs'         && <DocsPage />}
               {currentPage === 'legal'        && <LegalPage />}
               {currentPage === 'help'         && <HelpPage />}
-              {currentPage === 'pricing'      && <PricingPage />}
+              {currentPage === 'pricing'      && <PricingPage onBuyNow={(plan) => setPendingPayment(plan)} />}
               {currentPage === 'catalog'      && <CatalogPage />}
             </div>
             <Footer onNavigate={setCurrentPage} />

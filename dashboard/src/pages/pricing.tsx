@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
+import type { PaymentPlan } from '@/pages/payment'
 
 const plans = [
   {
@@ -65,17 +66,20 @@ const TRANSITION = {
   mass: 0.8,
 }
 
-export function PricingPage() {
+interface Props {
+  onBuyNow?: (plan: PaymentPlan) => void
+}
+
+export function PricingPage({ onBuyNow }: Props) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [purchasing, setPurchasing] = useState<string | null>(null)
 
   function handleBuyNow(planId: string, planName: string, price: number) {
     setPurchasing(planId)
-    // Simulate purchase flow — replace with real payment integration
     setTimeout(() => {
       setPurchasing(null)
-      alert(`Redirecting to checkout for ${planName} plan @ KES ${price.toLocaleString()}/${billingCycle === 'monthly' ? 'mo' : 'yr'}`)
-    }, 800)
+      onBuyNow?.({ name: planName, price, billing: billingCycle })
+    }, 600)
   }
 
   return (
