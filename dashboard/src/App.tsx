@@ -16,6 +16,7 @@ import { DocsPage }        from '@/pages/docs'
 import { LegalPage }       from '@/pages/legal'
 import { HelpPage }        from '@/pages/help'
 import { LoginPage }       from '@/pages/login'
+import { LandingPage }     from '@/pages/landing'
 import { PricingPage }     from '@/pages/pricing'
 import { CatalogPage }     from '@/pages/catalog'
 import { Footer }          from '@/components/footer'
@@ -43,10 +44,17 @@ const PAGE_TITLES: Record<Page, string> = {
 
 export default function App() {
   const [authed, setAuthed]           = useState(false)
+  const [showLogin, setShowLogin]     = useState(false)
   const [currentPage, setCurrentPage] = useState<Page>('overview')
 
-  if (!authed) {
-    return <LoginPage onLogin={() => setAuthed(true)} />
+  // Visitor — show public portfolio landing page
+  if (!authed && !showLogin) {
+    return <LandingPage onGetStarted={() => setShowLogin(true)} />
+  }
+
+  // Visitor clicked Sign In / Get Started — show login gate
+  if (!authed && showLogin) {
+    return <LoginPage onLogin={() => { setAuthed(true); setShowLogin(false) }} />
   }
 
   return (
