@@ -103,18 +103,34 @@ export function LegalPage() {
 
       {tab === 'refunds' && (
         <div className="space-y-6">
-          <Section title="Subscription refunds">
-            <p>If you cancel within 7 days of your first payment on a new plan and have not processed more than 50 customer orders, you are eligible for a full refund.</p>
-            <p>After 7 days, subscription fees are non-refundable. We do not issue pro-rated refunds for mid-cycle cancellations.</p>
+          <Section title="General refund policy">
+            <p>All subscription fees paid to DukaBot AI are <strong>non-refundable</strong> except where expressly stated below. By subscribing to any DukaBot AI plan, you acknowledge and agree to this policy.</p>
           </Section>
-          <Section title="How to request a refund">
-            <p>Email support@dukabot.ai with the subject line "Refund Request" and your merchant account email. We process refund requests within 5 business days. Approved refunds are returned via M-Pesa or bank transfer within 14 days.</p>
+          <Section title="Eligibility for a refund">
+            <p>A refund may be considered <strong>only</strong> if all of the following conditions are met:</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>The request is made within <strong>48 hours</strong> of the initial subscription payment on a brand-new account.</li>
+              <li>Fewer than <strong>10 customer conversations</strong> have been handled by DukaBot on the account.</li>
+              <li>No M-Pesa STK Push transactions have been initiated through the platform.</li>
+              <li>A written refund request is submitted to support@axonlattice.dev with full account details.</li>
+            </ul>
+            <p>Refund requests that do not satisfy all conditions above will be automatically declined.</p>
           </Section>
-          <Section title="Customer order refunds">
-            <p>Refunds for orders placed by your customers through DukaBot are your responsibility as the merchant. DukaBot logs all M-Pesa transactions to help you reconcile refunds. We do not process customer refunds on your behalf.</p>
+          <Section title="No pro-rated refunds">
+            <p>DukaBot AI does not issue partial or pro-rated refunds for any reason, including but not limited to: early cancellation, downgrading plans, unused days in a billing period, or dissatisfaction with AI output quality.</p>
+            <p>Upon cancellation, access continues until the end of the current billing period. No credit or refund is issued for the remaining period.</p>
           </Section>
-          <Section title="Exceptions">
-            <p>If DukaBot caused a technical error that resulted in a customer being charged incorrectly (e.g., duplicate STK Push), we will credit your account for the full transaction amount.</p>
+          <Section title="Plan upgrades and changes">
+            <p>Payments made for plan upgrades are non-refundable. When you upgrade mid-cycle, you are charged the difference immediately and that amount is final.</p>
+          </Section>
+          <Section title="How to submit a request">
+            <p>Email <strong>support@axonlattice.dev</strong> with the subject line <em>"Refund Request — [Your Account Email]"</em>. Include your merchant account email, the date of payment, and the reason for the request. We review eligible requests within 7 business days. Approved refunds are processed via M-Pesa or bank transfer within 21 days.</p>
+          </Section>
+          <Section title="DukaBot AI platform errors">
+            <p>If a verified technical fault on DukaBot AI's infrastructure directly causes a double-charge or failed STK Push that results in a customer being debited without a corresponding order being created, DukaBot AI will issue an account credit (not a cash refund) equal to the transaction amount within 14 days of a confirmed report. This is the sole exception to the no-refund policy and applies only to verified platform-side errors, not issues arising from the merchant's WhatsApp number, Safaricom network, or customer device.</p>
+          </Section>
+          <Section title="Chargebacks">
+            <p>Initiating a chargeback or payment dispute without first contacting DukaBot AI support constitutes a breach of these Terms. DukaBot AI reserves the right to immediately suspend the account, pursue recovery of disputed amounts, and permanently ban the merchant from future use of the platform.</p>
           </Section>
         </div>
       )}

@@ -26,7 +26,7 @@ const navigation: { id: string; name: string; items: NavItem[] }[] = [
     items: [
       { name: "Overview",      page: "overview"      },
       { name: "How it Works",  page: "how-it-works"  },
-      { name: "Pricing",       page: "settings"      },
+      { name: "Pricing",       page: "pricing"       },
     ],
   },
   {

@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import { motion } from 'motion/react'
 import WaterRipple, { type WaterRippleHandle } from '@/components/water-ripple'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface Props {
   onLogin: () => void
@@ -29,9 +30,10 @@ export function LoginPage({ onLogin }: Props) {
   const rippleRef   = useRef<WaterRippleHandle>(null)
   const cardRef     = useRef<HTMLDivElement>(null)
   const lastMoveRef = useRef(0)
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [acceptedTos, setAcceptedTos] = useState(false)
 
   const addRippleAt = useCallback((el: HTMLElement | null, amp = 0.7) => {
     if (!el) return
@@ -205,16 +207,75 @@ export function LoginPage({ onLogin }: Props) {
                 }}
               />
 
+              {/* Terms of Service */}
+              <div className="flex flex-col gap-2 mt-1">
+                <ScrollArea
+                  className="h-28 w-full rounded-xl border"
+                  style={{
+                    background: 'rgba(255,255,255,0.40)',
+                    borderColor: 'rgba(190,200,220,0.65)',
+                  }}
+                >
+                  <div className="p-3">
+                    <h4 className="mb-2 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      Terms of Service
+                    </h4>
+                    <div className="space-y-2.5 text-xs text-gray-500 leading-relaxed">
+                      <p>Welcome to DukaBot AI. By accessing or using our service, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+                      <p>You must be at least 18 years old to use this service. By using this service, you represent and warrant that you meet this requirement.</p>
+                      <p>We reserve the right to modify or discontinue, temporarily or permanently, the service (or any part thereof) with or without notice.</p>
+                      <p>You agree not to reproduce, duplicate, copy, sell, resell or exploit any portion of the service without express written permission by us.</p>
+                      <p>We reserve the right to refuse service to anyone for any reason at any time. Your content may be transferred and involve transmissions over various networks.</p>
+                      <p>We do not warrant that the service will be uninterrupted, timely, secure, or error-free. We may remove the service for indefinite periods of time or cancel at any time.</p>
+                      <p>You agree to indemnify and hold DukaBot AI and its affiliates, officers, agents, and employees harmless from any claim or demand arising out of your breach of these Terms.</p>
+                    </div>
+                  </div>
+                </ScrollArea>
+
+                <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                  <div className="relative shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={acceptedTos}
+                      onChange={e => setAcceptedTos(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div
+                      className="w-4 h-4 rounded flex items-center justify-center transition-all"
+                      style={{
+                        background: acceptedTos ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'rgba(255,255,255,0.6)',
+                        border: acceptedTos ? '1.5px solid #6366f1' : '1.5px solid rgba(190,200,220,0.8)',
+                        boxShadow: acceptedTos ? '0 0 0 3px rgba(99,102,241,0.12)' : 'none',
+                      }}
+                      onClick={() => setAcceptedTos(v => !v)}
+                    >
+                      {acceptedTos && (
+                        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                          <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-600">
+                    I have read and agree to the{' '}
+                    <span className="text-indigo-600 font-medium underline underline-offset-2 cursor-pointer">
+                      Terms of Service
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !acceptedTos}
                 onClick={e => addRippleAt(e.currentTarget, 1.0)}
                 className="w-full rounded-full py-2.5 text-sm font-semibold text-white transition-all mt-1 active:scale-[0.98]"
                 style={{
-                  background: loading
-                    ? 'rgba(99,102,241,0.55)'
+                  background: loading || !acceptedTos
+                    ? 'rgba(99,102,241,0.40)'
                     : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                  boxShadow: loading ? 'none' : '0 4px 14px rgba(99,102,241,0.35)',
+                  boxShadow: loading || !acceptedTos ? 'none' : '0 4px 14px rgba(99,102,241,0.35)',
+                  cursor: !acceptedTos ? 'not-allowed' : 'pointer',
                 }}
               >
                 {loading ? 'Signing in…' : 'Log in'}

@@ -5,6 +5,7 @@ import {
   MinusSignIcon,
   Tick02Icon,
   UserStoryIcon,
+  CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import NumberFlow from "@number-flow/react";
@@ -260,6 +261,20 @@ function PricingCard() {
                               </button>
                             </div>
                           </div>
+
+                          {/* Buy Now button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const p = plans.find(pl => pl.id === plan.id);
+                              const price = billingCycle === "monthly" ? p!.monthlyPrice : p!.yearlyPrice;
+                              alert(`Proceeding to checkout for ${plan.name} @ KES ${price.toLocaleString()}/${billingCycle === "monthly" ? "mo" : "yr"}`);
+                            }}
+                            className="w-full rounded-xl py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                          >
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                            Buy Now — KES <NumberFlow value={billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice} format={{ style: "decimal" }} />
+                          </button>
                         </div>
                       </motion.div>
                     )}

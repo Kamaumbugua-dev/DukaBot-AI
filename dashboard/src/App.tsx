@@ -16,11 +16,13 @@ import { DocsPage }        from '@/pages/docs'
 import { LegalPage }       from '@/pages/legal'
 import { HelpPage }        from '@/pages/help'
 import { LoginPage }       from '@/pages/login'
+import { PricingPage }     from '@/pages/pricing'
+import { CatalogPage }     from '@/pages/catalog'
 import { Footer }          from '@/components/footer'
 
 export type Page =
   | 'overview' | 'orders' | 'analytics' | 'customers' | 'settings' | 'testimonials'
-  | 'about' | 'how-it-works' | 'features' | 'docs' | 'legal' | 'help'
+  | 'about' | 'how-it-works' | 'features' | 'docs' | 'legal' | 'help' | 'pricing' | 'catalog'
 
 const PAGE_TITLES: Record<Page, string> = {
   overview:      'Overview',
@@ -35,6 +37,8 @@ const PAGE_TITLES: Record<Page, string> = {
   docs:          'Documentation',
   legal:         'Legal',
   help:          'Help & Support',
+  pricing:       'Pricing',
+  catalog:       'Product Catalog',
 }
 
 export default function App() {
@@ -62,7 +66,7 @@ export default function App() {
               {currentPage === 'orders'       && <OrdersPage />}
               {currentPage === 'analytics'    && <AnalyticsPage />}
               {currentPage === 'customers'    && <CustomersPage />}
-              {currentPage === 'settings'     && <SettingsPage />}
+              {currentPage === 'settings'     && <SettingsPage onNavigate={setCurrentPage} />}
               {currentPage === 'testimonials' && <TestimonialsPage />}
               {currentPage === 'about'        && <AboutPage />}
               {currentPage === 'how-it-works' && <HowItWorksPage />}
@@ -70,6 +74,8 @@ export default function App() {
               {currentPage === 'docs'         && <DocsPage />}
               {currentPage === 'legal'        && <LegalPage />}
               {currentPage === 'help'         && <HelpPage />}
+              {currentPage === 'pricing'      && <PricingPage />}
+              {currentPage === 'catalog'      && <CatalogPage />}
             </div>
             <Footer onNavigate={setCurrentPage} />
           </main>

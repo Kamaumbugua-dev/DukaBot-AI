@@ -7,6 +7,8 @@ import {
   Bot,
   MessageSquare,
   Heart,
+  CreditCard,
+  Package,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -28,7 +30,9 @@ const NAV_ITEMS: { label: string; page: Page; icon: React.ElementType }[] = [
   { label: 'Orders', page: 'orders', icon: ShoppingCart },
   { label: 'Analytics', page: 'analytics', icon: BarChart3 },
   { label: 'Customers', page: 'customers', icon: Users },
-  { label: 'Testimonials', page: 'testimonials', icon: Heart },
+  { label: 'Catalog',      page: 'catalog',      icon: Package    },
+  { label: 'Testimonials', page: 'testimonials', icon: Heart      },
+  { label: 'Pricing',      page: 'pricing',      icon: CreditCard },
 ]
 
 interface Props {
