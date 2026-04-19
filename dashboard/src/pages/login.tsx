@@ -4,7 +4,7 @@ import WaterRipple, { type WaterRippleHandle } from '@/components/water-ripple'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface Props {
-  onLogin: () => void
+  onLogin: (isAdmin?: boolean) => void
 }
 
 function elementToGLCoords(el: HTMLElement) {
@@ -56,7 +56,8 @@ export function LoginPage({ onLogin }: Props) {
     e.preventDefault()
     addRippleAt(cardRef.current, 1.0)
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin() }, 900)
+    const isAdmin = email.trim().toLowerCase() === 'admin@dukabot.ai'
+    setTimeout(() => { setLoading(false); onLogin(isAdmin) }, 900)
   }
 
   return (

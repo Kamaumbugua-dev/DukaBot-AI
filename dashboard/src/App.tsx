@@ -20,6 +20,7 @@ import { LandingPage }     from '@/pages/landing'
 import { PricingPage }     from '@/pages/pricing'
 import { PaymentPage, type PaymentPlan } from '@/pages/payment'
 import { CatalogPage }     from '@/pages/catalog'
+import { AdminPage }       from '@/pages/admin'
 import { Footer }          from '@/components/footer'
 
 export type Page =
@@ -45,6 +46,7 @@ const PAGE_TITLES: Record<Page, string> = {
 
 export default function App() {
   const [authed, setAuthed]           = useState(false)
+  const [isAdmin, setIsAdmin]         = useState(false)
   const [showLogin, setShowLogin]     = useState(false)
   const [currentPage, setCurrentPage] = useState<Page>('overview')
   const [pendingPayment, setPendingPayment] = useState<PaymentPlan | null>(null)
@@ -56,7 +58,24 @@ export default function App() {
 
   // Visitor clicked Sign In / Get Started — show login gate
   if (!authed && showLogin) {
-    return <LoginPage onLogin={() => { setAuthed(true); setShowLogin(false) }} />
+    return (
+      <LoginPage
+        onLogin={(adminFlag) => {
+          setAuthed(true)
+          setIsAdmin(!!adminFlag)
+          setShowLogin(false)
+        }}
+      />
+    )
+  }
+
+  // Admin — show separate admin dashboard
+  if (authed && isAdmin) {
+    return (
+      <AdminPage
+        onSignOut={() => { setAuthed(false); setIsAdmin(false); setShowLogin(false) }}
+      />
+    )
   }
 
   // Payment full-screen overlay — shown over the dashboard when a plan is selected
