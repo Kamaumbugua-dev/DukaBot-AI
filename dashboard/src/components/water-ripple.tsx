@@ -35,17 +35,16 @@ void main() {
   float ar = uRes.x / uRes.y;
   vec2 uvA = vec2(uv.x * ar, uv.y);
 
-  // ── ambient surface undulation ──────────────────────────────────────────
+  // ── ambient surface undulation — kept very subtle so ripples dominate ──
   float s = 0.0;
-  s += sin(uvA.x * 3.1 + uTime * 0.22) * cos(uvA.y * 2.7 - uTime * 0.17) * 0.55;
-  s += sin(uvA.x * 5.3 - uvA.y * 4.1 + uTime * 0.38) * 0.28;
-  s += cos((uvA.x * 2.0 + uvA.y * 1.8) - uTime * 0.28) * 0.18;
-  // subtle radial swell from centre
+  s += sin(uvA.x * 3.1 + uTime * 0.18) * cos(uvA.y * 2.7 - uTime * 0.14) * 0.40;
+  s += sin(uvA.x * 5.3 - uvA.y * 4.1 + uTime * 0.30) * 0.18;
+  s += cos((uvA.x * 2.0 + uvA.y * 1.8) - uTime * 0.22) * 0.10;
   float dist0 = length(uvA - vec2(ar * 0.5, 0.5));
-  s += cos(dist0 * 3.5 - uTime * 0.45) * 0.12;
-  s *= 0.07;
+  s += cos(dist0 * 3.5 - uTime * 0.38) * 0.08;
+  s *= 0.04;   // ← much quieter ambient so sharp ripples stand out
 
-  // ── interactive ripples ─────────────────────────────────────────────────
+  // ── interactive ripples — crisp, narrow, high-frequency ────────────────
   float r = 0.0;
   for (int i = 0; i < 8; i++) {
     float amp = uRipples[i].w;
@@ -53,42 +52,46 @@ void main() {
 
     vec2 origin = vec2(uRipples[i].x * ar, uRipples[i].y);
     float age    = uTime - uRipples[i].z;
-    if (age < 0.0 || age > 6.0) continue;
+    if (age < 0.0 || age > 5.0) continue;
 
     float d      = length(uvA - origin);
-    float front  = age * 0.30;                // ring travels outward
-    float width  = 0.012 + age * 0.009;       // ring broadens with age
+    float front  = age * 0.32;
+    // ← NARROW ring: dramatically crisper than before
+    float width  = 0.0025 + age * 0.0015;
     float ring   = exp(-pow(d - front, 2.0) / (width * width));
-    // concentric oscillation on the ring
-    float osc    = cos((d - front) * 90.0 - age * 2.0);
-    float decay  = exp(-age * 0.55) * amp;
+    // ← HIGH frequency oscillation: dense, glass-like concentric rings
+    float osc    = cos((d - front) * 200.0 - age * 5.0);
+    // ← faster decay keeps the hit sharp
+    float decay  = exp(-age * 0.80) * amp;
     r += ring * osc * decay;
 
-    // secondary weaker echo ring
-    float front2 = age * 0.18;
-    float ring2  = exp(-pow(d - front2, 2.0) / (width * width * 1.5));
-    float osc2   = cos((d - front2) * 60.0 - age * 1.4);
-    r += ring2 * osc2 * decay * 0.35;
+    // inner echo ring — also narrow and crisp
+    float front2 = age * 0.20;
+    float width2 = 0.002 + age * 0.001;
+    float ring2  = exp(-pow(d - front2, 2.0) / (width2 * width2));
+    float osc2   = cos((d - front2) * 130.0 - age * 3.2);
+    r += ring2 * osc2 * decay * 0.28;
   }
 
   float wave = s + r;
 
-  // ── water colour palette — pearl/silver matching app white background ──
-  vec3 abyss  = vec3(0.76, 0.79, 0.84);
-  vec3 deep   = vec3(0.83, 0.85, 0.89);
-  vec3 mid    = vec3(0.89, 0.91, 0.94);
-  vec3 crest  = vec3(0.94, 0.95, 0.97);
-  vec3 foam   = vec3(0.99, 0.99, 1.00);
+  // ── liquid glass palette — cool silver-blue, high contrast crest/trough ─
+  vec3 abyss  = vec3(0.64, 0.69, 0.80);   // deeper trough — blue-silver
+  vec3 deep   = vec3(0.76, 0.80, 0.88);
+  vec3 mid    = vec3(0.87, 0.90, 0.95);
+  vec3 crest  = vec3(0.95, 0.97, 0.99);
+  vec3 foam   = vec3(1.00, 1.00, 1.00);
 
-  float t = clamp(wave * 0.5 + 0.5, 0.0, 1.0);
+  // higher contrast mapping — crests pop bright, troughs go noticeably dark
+  float t = clamp(wave * 0.75 + 0.5, 0.0, 1.0);
   vec3 col = mix(abyss,  deep,  smoothstep(0.00, 0.25, t));
   col       = mix(col,   mid,   smoothstep(0.25, 0.50, t));
-  col       = mix(col,   crest, smoothstep(0.50, 0.75, t));
-  col       = mix(col,   foam,  smoothstep(0.75, 1.00, t));
+  col       = mix(col,   crest, smoothstep(0.50, 0.78, t));
+  col       = mix(col,   foam,  smoothstep(0.78, 1.00, t));
 
-  // specular sparkle on high crests — subtle on light palette
-  float spec = pow(max(0.0, wave - 0.3), 3.0) * 0.18;
-  col += vec3(spec * 0.6, spec * 0.7, spec);
+  // sharp prismatic specular — bright hot-white flashes on crest tips
+  float spec = pow(max(0.0, wave - 0.18), 1.8) * 0.55;
+  col += vec3(spec * 0.55, spec * 0.72, spec);
 
   gl_FragColor = vec4(col, 1.0);
 }

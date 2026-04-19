@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, useInView } from 'motion/react'
+import { Bot, MessageCircle, Smartphone, Package, BarChart3, Globe, Check } from 'lucide-react'
 
 interface Props {
   onGetStarted: () => void
@@ -114,7 +115,7 @@ export function LandingPage({ onGetStarted }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-x-hidden">
 
       {/* ── Navbar ── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -341,7 +342,7 @@ export function LandingPage({ onGetStarted }: Props) {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" className="py-20 sm:py-28 bg-gray-50 dark:bg-gray-900/40">
+      <section id="features" className="py-20 sm:py-28 bg-white dark:bg-gray-900/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <FadeIn className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
@@ -355,46 +356,63 @@ export function LandingPage({ onGetStarted }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                icon: '🤖',
+                icon: Bot,
+                color: 'indigo',
                 title: 'Claude AI Sales Agent',
                 desc: 'Powered by Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. DukaBot understands context, upsells intelligently, and handles complex customer queries in natural language.',
                 tag: 'Core',
               },
               {
-                icon: '💚',
+                icon: MessageCircle,
+                color: 'green',
                 title: 'WhatsApp-Native',
                 desc: 'No app to download. No link to click. Customers message your existing WhatsApp Business number — DukaBot answers instantly, exactly as if you were there.',
                 tag: 'Channel',
               },
               {
-                icon: '💸',
+                icon: Smartphone,
+                color: 'emerald',
                 title: 'M-Pesa STK Push',
                 desc: 'Customers pay without leaving WhatsApp. DukaBot sends the STK Push to their phone, waits for PIN confirmation, and marks the order as paid — in under 60 seconds.',
                 tag: 'Payments',
               },
               {
-                icon: '📦',
+                icon: Package,
+                color: 'orange',
                 title: 'Live Product Catalog',
                 desc: 'Add products with names, prices, stock levels, specifications and images. DukaBot answers "do you have X?" accurately every time, and tells customers when stock is low.',
                 tag: 'Catalog',
               },
               {
-                icon: '📊',
+                icon: BarChart3,
+                color: 'purple',
                 title: 'Real-Time Analytics',
                 desc: 'See chats, orders and revenue by minute, hour, day, week, month or year. Understand what sells, when customers are active, and which products get the most enquiries.',
                 tag: 'Insights',
               },
               {
-                icon: '🇰🇪',
+                icon: Globe,
+                color: 'blue',
                 title: 'Kenglish & Swahili',
                 desc: 'Flip between English and Swahili with one toggle. DukaBot understands mixed-language inputs and responds in your chosen language — Nairobi-native from day one.',
                 tag: 'Language',
               },
-            ].map(({ icon, title, desc, tag }, i) => (
+            ].map(({ icon: Icon, color, title, desc, tag }, i) => {
+              const iconBg: Record<string, string> = {
+                indigo:  'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400',
+                green:   'bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400',
+                emerald: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400',
+                orange:  'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400',
+                purple:  'bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400',
+                blue:    'bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+              }
+              return (
               <FadeIn key={title} delay={i * 0.06}>
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 hover:shadow-lg transition-all hover:-translate-y-1 h-full flex flex-col">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl">{icon}</span>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg[color]}`}>
+                      <Icon size={20} />
+                    </div>
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
                       {tag}
                     </span>
@@ -403,7 +421,7 @@ export function LandingPage({ onGetStarted }: Props) {
                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed flex-1">{desc}</p>
                 </div>
               </FadeIn>
-            ))}
+            )})}
           </div>
         </div>
       </section>
@@ -615,7 +633,7 @@ export function LandingPage({ onGetStarted }: Props) {
                   <ul className="space-y-2 flex-1">
                     {features.map(f => (
                       <li key={f} className={`flex items-center gap-2 text-sm ${highlight ? 'text-indigo-100' : 'text-gray-600 dark:text-gray-400'}`}>
-                        <span className={`text-xs ${highlight ? 'text-indigo-300' : 'text-indigo-600'}`}>✓</span>
+                        <Check size={13} className={highlight ? 'text-indigo-300 shrink-0' : 'text-indigo-600 shrink-0'} />
                         {f}
                       </li>
                     ))}

@@ -4,11 +4,16 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell,
+} from 'recharts'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type AdminSection =
   | 'dashboard' | 'merchants' | 'subscriptions'
   | 'payments' | 'system' | 'support' | 'settings' | 'history'
+  | 'analytics' | 'pnl'
 
 type ActivityKind = 'signup' | 'payment' | 'plan_change' | 'suspension' | 'reinstatement' | 'cancellation' | 'ticket' | 'chat_milestone' | 'refund'
 
@@ -40,7 +45,7 @@ const SUBSCRIPTIONS = [
   { id: 'SUB-004', merchant: 'Njeri Fashion',         plan: 'Growth',  amount: 2999,  billing: 'Yearly',  status: 'active',    method: 'Card',   renewal: '2027-03-07' },
   { id: 'SUB-005', merchant: 'Maina Supermarket',    plan: 'Starter', amount: 0,     billing: 'Trial',   status: 'trial',     method: '—',      renewal: '2026-04-24' },
   { id: 'SUB-006', merchant: 'Akinyi Boutique',      plan: 'Growth',  amount: 3999,  billing: 'Monthly', status: 'active',    method: 'M-Pesa', renewal: '2026-05-19' },
-  { id: 'SUB-007', merchant: 'Kipchoge Hardware',    plan: 'Starter', amount: 1499,  billing: 'Monthly', status: 'suspended', method: 'M-Pesa', renewal: '—'         },
+  { id: 'SUB-007', merchant: 'Kipchoge Hardware',    plan: 'Starter', amount: 1499,  billing: 'Monthly', status: 'suspended', method: 'M-Pesa', renewal: '—', suspensionReason: 'Payment failure — M-Pesa STK Push declined 3 consecutive times on 2026-04-16. Account auto-suspended after 24-hour grace period.', reinstateRecommendation: 'REINSTATE', reinstateNote: 'Merchant has an open support ticket (#TKT-040) requesting review. First-time payment failure. Good chat activity (44 chats). Recommend reinstating with a 72-hour payment retry window.' },
   { id: 'SUB-008', merchant: 'Chebet Pharmacy',      plan: 'Pro',     amount: 6999,  billing: 'Yearly',  status: 'active',    method: 'Card',   renewal: '2027-02-01' },
   { id: 'SUB-009', merchant: 'Ngugi Auto Parts',     plan: 'Growth',  amount: 3999,  billing: 'Monthly', status: 'cancelled', method: 'M-Pesa', renewal: '—'         },
   { id: 'SUB-010', merchant: 'Kamau Agro Supplies',  plan: 'Growth',  amount: 2999,  billing: 'Yearly',  status: 'active',    method: 'Card',   renewal: '2027-03-22' },
@@ -235,6 +240,14 @@ const NAV: { section: AdminSection; label: string; icon: React.ReactNode; badge?
     section: 'support', label: 'Support Tickets',
     badge: `${SUPPORT_TICKETS.filter(t => t.status === 'open').length}`,
     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>,
+  },
+  {
+    section: 'analytics', label: 'Analytics',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M7 16l4-4 4 4 4-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  },
+  {
+    section: 'pnl', label: 'P&L Account',
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
   },
   {
     section: 'history', label: 'Merchant History',
@@ -459,6 +472,18 @@ function MerchantsSection({ onViewHistory }: { onViewHistory: (id: string) => vo
 }
 
 function SubscriptionsSection() {
+  const [statuses, setStatuses] = useState<Record<string, string>>(
+    Object.fromEntries(SUBSCRIPTIONS.map(s => [s.id, s.status]))
+  )
+  const [expandedSuspended, setExpandedSuspended] = useState<string | null>(null)
+
+  const suspended = SUBSCRIPTIONS.filter(s => s.status === 'suspended')
+
+  function reinstate(id: string) {
+    setStatuses(prev => ({ ...prev, [id]: 'active' }))
+    setExpandedSuspended(null)
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -478,7 +503,77 @@ function SubscriptionsSection() {
           </div>
         ))}
       </div>
+
+      {/* Suspended accounts requiring action */}
+      {suspended.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400">Suspended Accounts — Action Required</p>
+          </div>
+          {suspended.map(s => {
+            const isExpanded = expandedSuspended === s.id
+            const isReinstated = statuses[s.id] === 'active'
+            const sub = s as typeof s & { suspensionReason?: string; reinstateRecommendation?: string; reinstateNote?: string }
+            return (
+              <div key={s.id} className={`border rounded-xl transition-all ${isReinstated ? 'border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-950/20' : 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20'}`}>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{s.merchant}</p>
+                        <Badge variant="outline">{s.plan}</Badge>
+                        {isReinstated
+                          ? <StatusBadge status="active" />
+                          : <StatusBadge status="suspended" />
+                        }
+                      </div>
+                      <p className="text-xs text-gray-500 font-mono">{s.id} · {s.billing} · KES {s.amount.toLocaleString()}/cycle</p>
+                    </div>
+                    {!isReinstated && (
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => setExpandedSuspended(isExpanded ? null : s.id)}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-all">
+                          {isExpanded ? 'Hide Details' : 'View Reason'}
+                        </button>
+                        <button onClick={() => reinstate(s.id)}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all">
+                          Reinstate Account
+                        </button>
+                      </div>
+                    )}
+                    {isReinstated && (
+                      <span className="text-xs text-green-600 font-semibold px-3 py-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg">✓ Reinstated</span>
+                    )}
+                  </div>
+
+                  {isExpanded && !isReinstated && sub.suspensionReason && (
+                    <div className="mt-4 space-y-3 border-t border-red-100 dark:border-red-900/40 pt-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500 mb-1">Suspension Reason</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{sub.suspensionReason}</p>
+                      </div>
+                      {sub.reinstateNote && (
+                        <div className={`rounded-lg p-3 ${sub.reinstateRecommendation === 'REINSTATE' ? 'bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-100 dark:border-yellow-900'}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${sub.reinstateRecommendation === 'REINSTATE' ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-300' : 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'}`}>
+                              Recommendation: {sub.reinstateRecommendation}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{sub.reinstateNote}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <Card>
+        <CardHeader><CardTitle className="text-sm">All Subscriptions</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -509,7 +604,7 @@ function SubscriptionsSection() {
                     )}
                     {s.method === '—' && <span className="text-gray-400 text-xs">—</span>}
                   </TableCell>
-                  <TableCell><StatusBadge status={s.status} /></TableCell>
+                  <TableCell><StatusBadge status={statuses[s.id] ?? s.status} /></TableCell>
                   <TableCell className="text-xs text-gray-500">{s.renewal}</TableCell>
                 </TableRow>
               ))}
@@ -767,7 +862,82 @@ const KIND_META: Record<ActivityKind, { label: string; dot: string; icon: React.
   refund:         { label: 'Refund',         dot: 'bg-orange-500',  icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 9l4-4 4 4M7 5v14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 15l-4 4-4-4M17 19V5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
 }
 
-type HistoryTab = 'timeline' | 'payments' | 'tickets'
+type HistoryTab = 'timeline' | 'payments' | 'tickets' | 'badges'
+
+// ── Merchant badges lookup ────────────────────────────────────────────────────
+const MERCHANT_BADGES: Record<string, { name: string; tier: string; earned: boolean; benefit: string }[]> = {
+  M001: [
+    { name: 'Chat Master',     tier: 'Gold',    earned: true,  benefit: 'Priority support queue + 8% loyalty discount' },
+    { name: 'Revenue Rookie',  tier: 'Silver',  earned: true,  benefit: 'Advanced revenue analytics unlocked' },
+    { name: 'Loyal Merchant',  tier: 'Silver',  earned: true,  benefit: 'Free catalog tier upgrade for one month' },
+    { name: 'M-Pesa Champion', tier: 'Silver',  earned: true,  benefit: 'Payment priority routing enabled' },
+    { name: 'Chat Legend',     tier: 'Diamond', earned: false, benefit: 'Unlock at 5,000 chats — 15% discount + dedicated account manager' },
+  ],
+  M002: [
+    { name: 'First Sale',      tier: 'Bronze',  earned: true,  benefit: 'Revenue tracking dashboard enabled' },
+    { name: 'Early Adopter',   tier: 'Bronze',  earned: true,  benefit: 'Exclusive Early Adopter badge on profile' },
+    { name: 'Loyal Merchant',  tier: 'Silver',  earned: true,  benefit: 'Free catalog tier upgrade for one month' },
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: true,  benefit: '5% discount on next renewal' },
+    { name: 'Revenue Pro',     tier: 'Gold',    earned: false, benefit: 'Unlock at KES 250,000 revenue' },
+  ],
+  M003: [
+    { name: 'Chat Master',     tier: 'Gold',    earned: true,  benefit: 'Priority support queue + 8% loyalty discount' },
+    { name: 'Automation Master',tier: 'Gold',   earned: true,  benefit: 'Featured in DukaBot merchant success stories' },
+    { name: 'Revenue Pro',     tier: 'Gold',    earned: true,  benefit: 'Custom AI tone feature unlocked' },
+    { name: 'Revenue Champion',tier: 'Platinum',earned: true,  benefit: '20% perpetual discount + featured case study' },
+    { name: 'M-Pesa Champion', tier: 'Silver',  earned: true,  benefit: 'Payment priority routing enabled' },
+    { name: 'Chat Legend',     tier: 'Diamond', earned: false, benefit: 'Unlock at 5,000 chats' },
+    { name: 'DukaBot Veteran', tier: 'Diamond', earned: false, benefit: 'Unlock at 365 days active' },
+  ],
+  M004: [
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: true,  benefit: '5% discount on next renewal' },
+    { name: 'First Sale',      tier: 'Bronze',  earned: true,  benefit: 'Revenue tracking dashboard enabled' },
+    { name: 'Revenue Rookie',  tier: 'Silver',  earned: true,  benefit: 'Advanced revenue analytics unlocked' },
+    { name: 'Chat Champion',   tier: 'Silver',  earned: false, benefit: 'Unlock at 500 chats' },
+  ],
+  M005: [
+    { name: 'First Conversation', tier: 'Bronze', earned: true,  benefit: 'Analytics dashboard unlocked' },
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: false, benefit: 'Unlock at 100 chats' },
+  ],
+  M006: [
+    { name: 'Chat Champion',   tier: 'Silver',  earned: true,  benefit: 'Customer segmentation unlocked' },
+    { name: 'Revenue Rookie',  tier: 'Silver',  earned: true,  benefit: 'Advanced revenue analytics unlocked' },
+    { name: 'M-Pesa Champion', tier: 'Silver',  earned: true,  benefit: 'Payment priority routing enabled' },
+    { name: 'Early Adopter',   tier: 'Bronze',  earned: true,  benefit: 'Exclusive Early Adopter badge on profile' },
+    { name: 'Chat Master',     tier: 'Gold',    earned: false, benefit: 'Unlock at 1,000 chats' },
+  ],
+  M007: [
+    { name: 'First Conversation', tier: 'Bronze', earned: true, benefit: 'Analytics dashboard unlocked' },
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: false, benefit: 'Suspended before 100 chats — reinstate to continue' },
+  ],
+  M008: [
+    { name: 'Chat Master',     tier: 'Gold',    earned: true,  benefit: 'Priority support queue + 8% loyalty discount' },
+    { name: 'Automation Master',tier: 'Gold',   earned: true,  benefit: 'Featured in DukaBot merchant success stories' },
+    { name: 'Revenue Pro',     tier: 'Gold',    earned: true,  benefit: 'Custom AI tone feature unlocked' },
+    { name: 'Revenue Champion',tier: 'Platinum',earned: true,  benefit: '20% perpetual discount + featured case study' },
+    { name: 'Loyal Merchant',  tier: 'Silver',  earned: true,  benefit: 'Free catalog tier upgrade for one month' },
+    { name: 'M-Pesa Champion', tier: 'Silver',  earned: true,  benefit: 'Payment priority routing enabled' },
+  ],
+  M009: [
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: true,  benefit: '5% discount on next renewal' },
+    { name: 'First Sale',      tier: 'Bronze',  earned: true,  benefit: 'Revenue tracking dashboard enabled' },
+    { name: 'Chat Champion',   tier: 'Silver',  earned: false, benefit: 'Cancelled before 500 chats' },
+  ],
+  M010: [
+    { name: 'Chat Starter',    tier: 'Bronze',  earned: true,  benefit: '5% discount on next renewal' },
+    { name: 'First Sale',      tier: 'Bronze',  earned: true,  benefit: 'Revenue tracking dashboard enabled' },
+    { name: 'Revenue Rookie',  tier: 'Silver',  earned: true,  benefit: 'Advanced revenue analytics unlocked' },
+    { name: 'Chat Champion',   tier: 'Silver',  earned: false, benefit: 'Unlock at 500 chats' },
+  ],
+}
+
+const TIER_DOT: Record<string, string> = {
+  Bronze:   'bg-amber-500',
+  Silver:   'bg-slate-400',
+  Gold:     'bg-yellow-400',
+  Diamond:  'bg-cyan-400',
+  Platinum: 'bg-indigo-500',
+}
 
 function MerchantDetail({ merchant }: { merchant: typeof MERCHANTS[0] }) {
   const [tab, setTab] = useState<HistoryTab>('timeline')
@@ -847,6 +1017,7 @@ function MerchantDetail({ merchant }: { merchant: typeof MERCHANTS[0] }) {
           { id: 'timeline', label: `Timeline (${activity.length})` },
           { id: 'payments', label: `Payments (${payments.length})` },
           { id: 'tickets',  label: `Tickets (${tickets.length})` },
+          { id: 'badges',   label: `Badges (${(MERCHANT_BADGES[merchant.id] ?? []).filter(b => b.earned).length})` },
         ] as { id: HistoryTab; label: string }[]).map(t => (
           <button
             key={t.id}
@@ -969,6 +1140,53 @@ function MerchantDetail({ merchant }: { merchant: typeof MERCHANTS[0] }) {
               )}
             </div>
           )}
+
+          {tab === 'badges' && (() => {
+            const merchantBadges = MERCHANT_BADGES[merchant.id] ?? []
+            const earned = merchantBadges.filter(b => b.earned)
+            const locked  = merchantBadges.filter(b => !b.earned)
+            return (
+              <div className="space-y-5">
+                {earned.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Earned ({earned.length})</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {earned.map(b => (
+                        <div key={b.name} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 text-center shadow-sm">
+                          <div className="flex items-center justify-center gap-1.5 mb-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${TIER_DOT[b.tier] ?? 'bg-gray-400'}`} />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{b.tier}</span>
+                          </div>
+                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight">{b.name}</p>
+                          <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1.5 leading-snug">{b.benefit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {locked.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Locked ({locked.length})</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {locked.map(b => (
+                        <div key={b.name} className="bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl p-3 text-center opacity-55">
+                          <div className="flex items-center justify-center gap-1.5 mb-2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{b.tier}</span>
+                          </div>
+                          <p className="text-xs font-bold text-gray-500 leading-tight">{b.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-1.5 leading-snug">{b.benefit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {merchantBadges.length === 0 && (
+                  <p className="text-sm text-gray-400">No badge data for this merchant yet.</p>
+                )}
+              </div>
+            )
+          })()}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -1061,6 +1279,350 @@ function HistorySection({ initialMerchantId }: { initialMerchantId?: string | nu
   )
 }
 
+// ── Analytics Section ─────────────────────────────────────────────────────────
+const MONTHLY_REVENUE = [
+  { month: 'Nov', revenue: 58000,  merchants: 4  },
+  { month: 'Dec', revenue: 81000,  merchants: 5  },
+  { month: 'Jan', revenue: 142000, merchants: 7  },
+  { month: 'Feb', revenue: 198000, merchants: 8  },
+  { month: 'Mar', revenue: 251000, merchants: 9  },
+  { month: 'Apr', revenue: 287000, merchants: 10 },
+]
+
+const PLAN_MIX = [
+  { name: 'Starter', value: 3, color: '#6366f1' },
+  { name: 'Growth',  value: 5, color: '#8b5cf6' },
+  { name: 'Pro',     value: 2, color: '#a78bfa' },
+]
+
+const CHAT_VOLUME = [
+  { month: 'Nov', chats: 820  },
+  { month: 'Dec', chats: 1240 },
+  { month: 'Jan', chats: 2100 },
+  { month: 'Feb', chats: 3450 },
+  { month: 'Mar', chats: 5280 },
+  { month: 'Apr', chats: 6059 },
+]
+
+function AdminAnalytics() {
+  const growth = Math.round(((MONTHLY_REVENUE[5].revenue - MONTHLY_REVENUE[4].revenue) / MONTHLY_REVENUE[4].revenue) * 100)
+  const chatGrowth = Math.round(((CHAT_VOLUME[5].chats - CHAT_VOLUME[4].chats) / CHAT_VOLUME[4].chats) * 100)
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Platform Analytics</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Growth trends, revenue and engagement across all merchants</p>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'MRR Growth (MoM)',    value: `+${growth}%`,                             color: 'text-green-600'  },
+          { label: 'Chat Volume Growth',  value: `+${chatGrowth}%`,                          color: 'text-blue-600'   },
+          { label: 'Avg Revenue / Merchant', value: `KES ${Math.round(287000/10).toLocaleString()}`, color: 'text-indigo-600' },
+          { label: 'Chats / Merchant',    value: Math.round(6059/10).toLocaleString(),        color: 'text-purple-600' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+            <p className="text-xs text-gray-500">{label}</p>
+            <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenue + merchant growth charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Monthly Recurring Revenue</CardTitle>
+            <CardDescription>KES over the last 6 months</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={MONTHLY_REVENUE}>
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v: number) => [`KES ${v.toLocaleString()}`, 'Revenue']} />
+                <Line type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Chat Volume Growth</CardTitle>
+            <CardDescription>Total chats processed per month</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={CHAT_VOLUME}>
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [v.toLocaleString(), 'Chats']} />
+                <Bar dataKey="chats" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Merchant growth + plan mix */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Merchant Growth</CardTitle>
+            <CardDescription>Cumulative active merchants over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={MONTHLY_REVENUE}>
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [v, 'Merchants']} />
+                <Bar dataKey="merchants" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Plan Distribution</CardTitle>
+            <CardDescription>Active subscriptions by tier</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center gap-8">
+            <ResponsiveContainer width={160} height={160}>
+              <PieChart>
+                <Pie data={PLAN_MIX} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={70} strokeWidth={2}>
+                  {PLAN_MIX.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 space-y-3">
+              {PLAN_MIX.map(p => (
+                <div key={p.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.color }} />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{p.name}</span>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">{p.value} merchants</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Retention insight */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Retention &amp; Churn Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { label: 'Monthly Churn Rate',    value: '10%',  note: '1 cancellation this month',     color: 'text-red-600'    },
+              { label: 'Net Revenue Retention', value: '108%', note: 'Upsells outpace churn',          color: 'text-green-600'  },
+              { label: 'Trial → Paid Rate',     value: '80%',  note: '4 of 5 trials convert',          color: 'text-indigo-600' },
+              { label: 'Avg LTV (Growth)',       value: 'KES 47,988', note: '12-month projected value', color: 'text-purple-600' },
+            ].map(({ label, value, note, color }) => (
+              <div key={label} className="space-y-1">
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{label}</p>
+                <p className="text-[11px] text-gray-400">{note}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── P&L Section ───────────────────────────────────────────────────────────────
+const PNL_MONTHS = [
+  { month: 'Nov', revenue: 58000,  costs: 75000,  net: -17000 },
+  { month: 'Dec', revenue: 81000,  costs: 78000,  net:   3000 },
+  { month: 'Jan', revenue: 142000, costs: 85000,  net:  57000 },
+  { month: 'Feb', revenue: 198000, costs: 88000,  net: 110000 },
+  { month: 'Mar', revenue: 251000, costs: 92000,  net: 159000 },
+  { month: 'Apr', revenue: 287000, costs: 95000,  net: 192000 },
+]
+
+const COST_BREAKDOWN = [
+  { label: 'WhatsApp Cloud API (Meta)',       monthly: 45000, type: 'fixed',    recommendation: 'MINIMIZE' },
+  { label: 'Claude AI (Anthropic API)',        monthly: 28000, type: 'variable', recommendation: 'FOCUS'    },
+  { label: 'Infrastructure (Railway + CDN)',   monthly: 12000, type: 'fixed',    recommendation: 'KEEP'     },
+  { label: 'Support Staff (1 FTE part-time)', monthly: 35000, type: 'fixed',    recommendation: 'MINIMIZE' },
+  { label: 'Email delivery (Resend)',          monthly: 800,   type: 'variable', recommendation: 'KEEP'     },
+  { label: 'Domain & SSL',                    monthly: 200,   type: 'fixed',    recommendation: 'KEEP'     },
+  { label: 'Manual onboarding calls',         monthly: 8000,  type: 'fixed',    recommendation: 'DROP'     },
+  { label: 'Printed marketing materials',     monthly: 5000,  type: 'fixed',    recommendation: 'DROP'     },
+  { label: 'Unused SMS backup channel',       monthly: 4000,  type: 'fixed',    recommendation: 'DROP'     },
+]
+
+function PnLSection() {
+  const thisMonth = PNL_MONTHS[PNL_MONTHS.length - 1]
+  const lastMonth = PNL_MONTHS[PNL_MONTHS.length - 2]
+  const margin = Math.round((thisMonth.net / thisMonth.revenue) * 100)
+  const prevMargin = Math.round((lastMonth.net / lastMonth.revenue) * 100)
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profit &amp; Loss Account</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Platform P&amp;L with strategic recommendations — April 2026</p>
+      </div>
+
+      {/* Monthly summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Revenue',  value: `KES ${thisMonth.revenue.toLocaleString()}`, color: 'text-green-600' },
+          { label: 'Total Costs',    value: `KES ${thisMonth.costs.toLocaleString()}`,   color: 'text-red-600'   },
+          { label: 'Net Profit',     value: `KES ${thisMonth.net.toLocaleString()}`,     color: thisMonth.net > 0 ? 'text-green-600' : 'text-red-600' },
+          { label: 'Net Margin',     value: `${margin}%`,                                color: margin > prevMargin ? 'text-green-600' : 'text-red-600' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+            <p className="text-xs text-gray-500">{label}</p>
+            <p className={`text-xl font-bold mt-1 ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* P&L chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Revenue vs Costs vs Net Profit (6 months)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={PNL_MONTHS}>
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => `KES ${v.toLocaleString()}`} />
+              <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 3 }} name="Revenue" />
+              <Line type="monotone" dataKey="costs"   stroke="#ef4444" strokeWidth={2}   dot={{ r: 3 }} name="Costs"   strokeDasharray="4 2" />
+              <Line type="monotone" dataKey="net"     stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} name="Net Profit" />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-6 mt-3 justify-center">
+            {[['Revenue','#22c55e'],['Costs (dashed)','#ef4444'],['Net Profit','#6366f1']].map(([l,c]) => (
+              <div key={l} className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-4 h-0.5 rounded" style={{ background: c }} />
+                {l}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cost breakdown with recommendations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Cost Breakdown &amp; Strategic Recommendations</CardTitle>
+          <CardDescription>What to focus on, minimize, and drop entirely</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cost Line</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Monthly (KES)</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {COST_BREAKDOWN.map(c => {
+                const actionStyle: Record<string, string> = {
+                  FOCUS:    'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400',
+                  MINIMIZE: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-500',
+                  KEEP:     'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+                  DROP:     'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+                }
+                return (
+                  <TableRow key={c.label}>
+                    <TableCell className="text-sm">{c.label}</TableCell>
+                    <TableCell>
+                      <span className="text-xs text-gray-400 capitalize">{c.type}</span>
+                    </TableCell>
+                    <TableCell className="text-sm font-medium text-right">
+                      {c.monthly.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${actionStyle[c.recommendation]}`}>
+                        {c.recommendation}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+              <TableRow className="bg-gray-50 dark:bg-gray-900/50 font-bold">
+                <TableCell colSpan={2} className="text-sm font-bold">Total Monthly Costs</TableCell>
+                <TableCell className="text-sm font-bold text-red-600 text-right">
+                  {COST_BREAKDOWN.reduce((a,c) => a+c.monthly, 0).toLocaleString()}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Strategy cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          {
+            action: 'FOCUS ON',
+            color: 'border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950/30',
+            titleColor: 'text-indigo-700 dark:text-indigo-400',
+            items: [
+              'Claude AI API investment — directly drives chat quality and conversion',
+              'Pro plan upsells — highest margin (80%+) and stickiest customers',
+              'Self-serve onboarding — eliminate manual calls, scale without headcount',
+              'Merchant retention — churn is the #1 margin killer at current MRR',
+            ],
+          },
+          {
+            action: 'MINIMIZE',
+            color: 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30',
+            titleColor: 'text-yellow-700 dark:text-yellow-500',
+            items: [
+              'Support ticket volume — invest in better in-app guidance to reduce ticket rate by 40%',
+              'WhatsApp API costs — negotiate volume pricing with Meta at >500K messages/month',
+              'Manual billing interventions — automate payment retries and reinstatements',
+              'Infrastructure overage — right-size Railway tier to match actual traffic',
+            ],
+          },
+          {
+            action: 'DROP ENTIRELY',
+            color: 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30',
+            titleColor: 'text-red-700 dark:text-red-400',
+            items: [
+              'Printed marketing materials — zero ROI, digital channels outperform 12× at 1/10 cost',
+              'Manual onboarding calls — no correlation with 30-day retention; docs + video do the job',
+              'SMS backup channel — zero usage in 90 days, KES 4,000/month wasted',
+            ],
+          },
+        ].map(({ action, color, titleColor, items }) => (
+          <div key={action} className={`rounded-2xl border p-5 ${color}`}>
+            <p className={`text-xs font-black uppercase tracking-widest mb-3 ${titleColor}`}>{action}</p>
+            <ul className="space-y-2">
+              {items.map((item, i) => (
+                <li key={i} className="flex gap-2 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <span className={`${titleColor} font-bold shrink-0`}>→</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── MAIN ADMIN LAYOUT ─────────────────────────────────────────────────────────
 interface AdminProps {
   onSignOut: () => void
@@ -1083,6 +1645,8 @@ export function AdminPage({ onSignOut }: AdminProps) {
     payments:      <PaymentsSection />,
     system:        <SystemHealth />,
     support:       <SupportSection />,
+    analytics:     <AdminAnalytics />,
+    pnl:           <PnLSection />,
     history:       <HistorySection initialMerchantId={focusMerchantId} />,
     settings:      <PlatformSettings />,
   }
