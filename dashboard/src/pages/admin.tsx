@@ -13,7 +13,7 @@ import {
 type AdminSection =
   | 'dashboard' | 'merchants' | 'subscriptions'
   | 'payments' | 'system' | 'support' | 'settings' | 'history'
-  | 'analytics' | 'pnl'
+  | 'analytics' | 'pnl' | 'early-adopters'
 
 type ActivityKind = 'signup' | 'payment' | 'plan_change' | 'suspension' | 'reinstatement' | 'cancellation' | 'ticket' | 'chat_milestone' | 'refund'
 
@@ -163,6 +163,29 @@ const MERCHANT_ACTIVITY: Record<string, ActivityEvent[]> = {
   ],
 }
 
+// ── Early adopter data (must live before NAV) ─────────────────────────────────
+const LAUNCH_DATE  = '2026-01-05'
+const EA_CUTOFF    = '2026-02-04'
+const EA_RATES: Record<string, number>  = { Starter: 999,  Growth: 2499, Pro: 5999 }
+const STD_RATES: Record<string, number> = { Starter: 1499, Growth: 3999, Pro: 8999 }
+const TXN_FEE_PCT  = 0.02
+
+const EARLY_ADOPTERS = MERCHANTS
+  .filter(m => m.joined >= LAUNCH_DATE && m.joined < EA_CUTOFF)
+  .map(m => {
+    const earlyRate       = EA_RATES[m.plan]  ?? 0
+    const stdRate         = STD_RATES[m.plan] ?? 0
+    const savingsMo       = stdRate - earlyRate
+    const txnFee          = Math.round(m.revenue * TXN_FEE_PCT)
+    const daysOnPlatform  = Math.floor((new Date('2026-04-20').getTime() - new Date(m.joined).getTime()) / 86_400_000)
+    const daysSinceLaunch = Math.floor((new Date(m.joined).getTime() - new Date(LAUNCH_DATE).getTime()) / 86_400_000)
+    const monthsActive    = Math.floor(daysOnPlatform / 30)
+    const subRevenue      = earlyRate * monthsActive
+    const totalRevenue    = subRevenue + txnFee
+    return { ...m, earlyRate, stdRate, savingsMo, txnFee, daysOnPlatform, daysSinceLaunch, monthsActive, subRevenue, totalRevenue }
+  })
+  .sort((a, b) => a.joined.localeCompare(b.joined))
+
 // ── Stat card ────────────────────────────────────────────────────────────────
 function KPI({ label, value, sub, color = 'indigo' }: {
   label: string; value: string; sub: string; color?: string
@@ -240,6 +263,11 @@ const NAV: { section: AdminSection; label: string; icon: React.ReactNode; badge?
     section: 'support', label: 'Support Tickets',
     badge: `${SUPPORT_TICKETS.filter(t => t.status === 'open').length}`,
     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg>,
+  },
+  {
+    section: 'early-adopters', label: 'Early Adopters',
+    badge: `${EARLY_ADOPTERS.filter(m => m.status === 'active').length}`,
+    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   },
   {
     section: 'analytics', label: 'Analytics',
@@ -1623,6 +1651,231 @@ function PnLSection() {
   )
 }
 
+// ── Early Adopters Section ────────────────────────────────────────────────────
+function EarlyAdoptersSection() {
+  const active    = EARLY_ADOPTERS.filter(m => m.status === 'active')
+  const totalSubs = EARLY_ADOPTERS.reduce((a, m) => a + m.subRevenue, 0)
+  const totalTxn  = EARLY_ADOPTERS.reduce((a, m) => a + m.txnFee, 0)
+  const totalAll  = totalSubs + totalTxn
+  const lostMo    = EARLY_ADOPTERS.filter(m => m.status === 'cancelled').reduce((a, m) => a + m.earlyRate, 0)
+
+  return (
+    <div className="space-y-6">
+
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-orange-200 dark:shadow-orange-900/40">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+              stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="rgba(255,255,255,0.25)"/>
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Early Adopter Program</h2>
+          <p className="text-sm text-gray-500 mt-0.5 max-w-2xl leading-relaxed">
+            Merchants who subscribed within the first 30 days of DukaBot AI's launch (Jan 5 – Feb 4, 2026) are locked into
+            their early-adoption rate <strong className="text-gray-700 dark:text-gray-300">forever</strong>, regardless of
+            future price changes. They also contribute a{' '}
+            <strong className="text-orange-600">2% DukaBot transaction fee</strong> on all M-Pesa GMV processed through the platform.
+          </p>
+        </div>
+      </div>
+
+      {/* Program terms banner */}
+      <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          {[
+            { label: 'Launch Date',          value: 'Jan 5, 2026',      sub: 'Platform go-live'                     },
+            { label: 'Adoption Window',       value: '30 days',          sub: 'Closed Feb 4, 2026'                   },
+            { label: 'Rate Lock',             value: 'Forever',          sub: 'Immune to price increases'             },
+            { label: 'Transaction Fee',       value: '2% on GMV',        sub: 'All M-Pesa payments via DukaBot'       },
+          ].map(({ label, value, sub }) => (
+            <div key={label}>
+              <p className="text-lg font-bold text-amber-800 dark:text-amber-300">{value}</p>
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mt-0.5">{label}</p>
+              <p className="text-[11px] text-amber-600/70 dark:text-amber-500/70 mt-0.5">{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-500">Early Adopters</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{EARLY_ADOPTERS.length}</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">{active.length} still active</p>
+        </div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-500">Subscription Revenue</p>
+          <p className="text-2xl font-bold text-indigo-600 mt-1">KES {totalSubs.toLocaleString()}</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">From locked early rates</p>
+        </div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-500">Transaction Fee Revenue</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">KES {totalTxn.toLocaleString()}</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">2% on total GMV processed</p>
+        </div>
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-500">Combined Revenue</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">KES {totalAll.toLocaleString()}</p>
+          <p className="text-[11px] text-red-500 mt-0.5">KES {lostMo.toLocaleString()}/mo lost (cancelled)</p>
+        </div>
+      </div>
+
+      {/* Rate comparison reference */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Locked Early Rates vs Current Standard Rates</CardTitle>
+          <CardDescription>Early adopters pay these rates forever — price increases do not apply</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            {(['Starter', 'Growth', 'Pro'] as const).map(plan => {
+              const early  = EA_RATES[plan]
+              const std    = STD_RATES[plan]
+              const saving = std - early
+              const pct    = Math.round((saving / std) * 100)
+              const colors: Record<string, string> = { Starter: 'indigo', Growth: 'purple', Pro: 'amber' }
+              const c = colors[plan]
+              return (
+                <div key={plan} className={`rounded-xl border p-4 bg-${c}-50 dark:bg-${c}-950/30 border-${c}-100 dark:border-${c}-900/50`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{plan}</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full bg-${c}-100 dark:bg-${c}-900/50 text-${c}-700 dark:text-${c}-400`}>
+                      {pct}% OFF
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Early rate</span>
+                      <span className="text-sm font-bold text-green-600">KES {early.toLocaleString()}/mo</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Standard rate</span>
+                      <span className="text-sm font-medium text-gray-400 line-through">KES {std.toLocaleString()}/mo</span>
+                    </div>
+                    <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Saving/month</span>
+                      <span className="text-xs font-bold text-indigo-600">KES {saving.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Individual merchant breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Early Adopter Merchant Breakdown</CardTitle>
+          <CardDescription>Subscription revenue + 2% transaction fee contribution per merchant</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Merchant</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Day #</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Locked Rate</TableHead>
+                <TableHead className="text-right">Saving/mo</TableHead>
+                <TableHead className="text-right">GMV Processed</TableHead>
+                <TableHead className="text-right">2% Txn Fee</TableHead>
+                <TableHead className="text-right">Sub Revenue</TableHead>
+                <TableHead className="text-right">Total from Merchant</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {EARLY_ADOPTERS.map(m => (
+                <TableRow key={m.id} className={m.status === 'cancelled' ? 'opacity-50' : ''}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-300 shrink-0">
+                        {m.name[0]}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{m.name}</p>
+                        <p className="text-[10px] text-gray-400 font-mono">{m.id}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">{m.joined}</TableCell>
+                  <TableCell>
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      Day {m.daysSinceLaunch + 1}
+                    </span>
+                  </TableCell>
+                  <TableCell><Badge variant="outline">{m.plan}</Badge></TableCell>
+                  <TableCell><StatusBadge status={m.status} /></TableCell>
+                  <TableCell className="text-right text-sm font-semibold text-green-600">
+                    KES {m.earlyRate.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                    KES {m.savingsMo.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-sm text-gray-700 dark:text-gray-300">
+                    KES {m.revenue.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-sm font-semibold text-orange-600">
+                    KES {m.txnFee.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-sm text-gray-600 dark:text-gray-400">
+                    KES {m.subRevenue.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-sm font-bold text-gray-900 dark:text-white">
+                    KES {m.totalRevenue.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Totals footer */}
+          <div className="border-t border-gray-100 dark:border-gray-800 p-4 bg-gray-50 dark:bg-gray-900/50">
+            <div className="flex flex-wrap gap-6 justify-end text-sm">
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Total GMV from Early Adopters</p>
+                <p className="font-bold text-gray-900 dark:text-white">
+                  KES {EARLY_ADOPTERS.reduce((a, m) => a + m.revenue, 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-orange-600">Total 2% Transaction Fees</p>
+                <p className="font-bold text-orange-600">KES {totalTxn.toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-indigo-600">Total Subscription Revenue</p>
+                <p className="font-bold text-indigo-600">KES {totalSubs.toLocaleString()}</p>
+              </div>
+              <div className="text-right border-l border-gray-200 dark:border-gray-700 pl-6">
+                <p className="text-xs text-gray-600 dark:text-gray-400">Combined Total Revenue</p>
+                <p className="font-black text-lg text-gray-900 dark:text-white">KES {totalAll.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-2">
+        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Program Notes</p>
+        <ul className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <li className="flex gap-2"><span className="text-amber-500 shrink-0">→</span> Early adopters retain their rate even if they upgrade to a higher plan — the early rate applies to the equivalent tier.</li>
+          <li className="flex gap-2"><span className="text-amber-500 shrink-0">→</span> The 2% DukaBot transaction fee applies to all successful M-Pesa STK Push transactions processed through the platform, forever.</li>
+          <li className="flex gap-2"><span className="text-amber-500 shrink-0">→</span> Cancelled merchants (e.g. Ngugi Auto Parts) lose their rate lock if they re-subscribe — they would be charged at the current standard rate.</li>
+          <li className="flex gap-2"><span className="text-amber-500 shrink-0">→</span> The early adoption window is permanently closed. No new merchants can qualify for these rates.</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 // ── MAIN ADMIN LAYOUT ─────────────────────────────────────────────────────────
 interface AdminProps {
   onSignOut: () => void
@@ -1645,6 +1898,7 @@ export function AdminPage({ onSignOut }: AdminProps) {
     payments:      <PaymentsSection />,
     system:        <SystemHealth />,
     support:       <SupportSection />,
+    'early-adopters': <EarlyAdoptersSection />,
     analytics:     <AdminAnalytics />,
     pnl:           <PnLSection />,
     history:       <HistorySection initialMerchantId={focusMerchantId} />,
@@ -1682,7 +1936,7 @@ export function AdminPage({ onSignOut }: AdminProps) {
         <nav className="flex-1 py-3 overflow-y-auto">
           <div className="space-y-0.5 px-2">
             {NAV.map(({ section: sec, label, icon, badge }) => (
-              <button key={sec} onClick={() => { setSection(sec); if (sec !== 'history') setFocusMerchantId(null) }}
+              <button key={sec} onClick={() => { setSection(sec); if (sec !== 'history' && sec !== 'early-adopters') setFocusMerchantId(null) }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   section === sec
                     ? 'bg-indigo-600 text-white'
